@@ -293,10 +293,9 @@ function clearAll() {
     var getClear = `${urlLink}/clear`
     sendJSONXMLHTTPRequest(getClear, null, (clearWorld) => {
         world = clearWorld
-        clearFrame()
         renderFrame()
     })
-    update()
+    clearFrame()
 }
 
 // 30 frames per second
