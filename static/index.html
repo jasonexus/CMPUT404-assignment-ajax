@@ -7,7 +7,8 @@
     <meta name="viewport" content="width=device-width" />
     <meta name="license" content="
         Copyright 2013 Abram Hindle
-        
+        Copyright 2022 Jason Branch-Allen
+
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
         You may obtain a copy of the License at
@@ -27,6 +28,7 @@
     <script>
 var canvas = document.getElementById('c');
 var host = window.location.host;
+var urlLink = `http://${host}`
 var context = canvas.getContext("2d");
 var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
@@ -38,6 +40,8 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
         if (xhr.readyState==4) {
             try {
                 if (xhr.status==200) {
+                    var data = JSON.parse(xhr.responseText);
+                    callback(data);
                     //XXX: parse some JSON from the request!
                     //XXX: Pass the data to the callback!
                 }
@@ -47,6 +51,10 @@ function sendJSONXMLHTTPRequest(url, objects, callback) {
             }
         }
     };
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.setRequestHeader('Content-Type', 'application/json')
+    xhr.send(JSON.stringify(objects))
     //XXX: POST to a URL
     //XXX: set the mimetype and the accept headers!
     // Remember to use application/json !
@@ -63,6 +71,18 @@ function drawCircle(context,entity) {
         var x = entity["x"];
         var y = entity["y"];
         //moveTo(x,y);
+
+        //Change line to dashed line
+        var x1 = 1
+        var y1 = 350
+        context.setLineDash([2, 5]);
+        context.beginPath();
+        context.moveTo(x, y);
+        context.lineTo(x, y);
+        // var gradient = context.createLinearGradient(x, y, x1, y1)
+        // gradient.addColorStop(0, "white")
+        // gradient.addColorStop(1, entity["colour"])
+        // fillStyle = gradient
         fillStyle = entity["colour"];
         strokeStyle = fillStyle;
         arc(x, y, (entity["radius"])?entity["radius"]:50, 0, 2.0 * Math.PI, false);  
@@ -134,9 +154,12 @@ function getPosition(e) {
 }
 
 
+
 function addEntity(entity, data) {
     world[entity] = data;
+    var requestUpdate = `${urlLink}/entity/${entity}`
     drawNextFrame(); // (but should we?)
+    sendJSONXMLHTTPRequest(requestUpdate, data, () => (something))
     //XXX: Send a XHTML Request that updates the entity you just  modified!
 
 }
@@ -247,21 +270,26 @@ mouse = (function() {
 // Add the application specific mouse listeners!
 //XXX: TODO Make these prettier!
 mouse.mousedowners.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'blue'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'#00C9FF', 'radius':80});
 });
 
 mouse.mouseuppers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'red'});
+    addEntityWithoutName({'x':x,'y':y,'colour':'#92FE9D', 'radius':60});
 });
 
 mouse.mousedraggers.push(function(x,y,clicked,e) {
-    addEntityWithoutName({'x':x,'y':y,'colour':'green',
-                          'radius':10});
+    addEntityWithoutName({'x':x,'y':y,'colour':'#e3ffe7',
+                          'radius':30});
 });
 
 
 function update() {
     //XXX: TODO Get the world from the webservice using a XMLHTTPRequest
+    var getFrom = `${urlLink}/world`
+    sendJSONXMLHTTPRequest(getFrom, null, (updateWorld) => {
+        world = updateWorld
+        drawNextFrame()
+    })
     drawFrame();
 }
 
